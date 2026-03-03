@@ -37,8 +37,13 @@ export async function createLabel(
       color: color || null,
       sortOrder,
     });
-  } catch {
-    return { error: "A label with that name already exists." };
+  } catch (e) {
+    console.error("createLabel error:", e);
+    const msg = e instanceof Error ? e.message : "";
+    if (msg.includes("unique") || msg.includes("duplicate")) {
+      return { error: "A label with that name already exists." };
+    }
+    return { error: "Failed to save label. Check your database connection." };
   }
 
   revalidatePath("/manage/labels");
@@ -84,8 +89,13 @@ export async function updateLabel(id: string, formData: FormData) {
 
   try {
     await db.update(labels).set({ name, slug, color: color || null, sortOrder }).where(eq(labels.id, id));
-  } catch {
-    return { error: "A label with that name already exists." };
+  } catch (e) {
+    console.error("updateLabel error:", e);
+    const msg = e instanceof Error ? e.message : "";
+    if (msg.includes("unique") || msg.includes("duplicate")) {
+      return { error: "A label with that name already exists." };
+    }
+    return { error: "Failed to save label. Check your database connection." };
   }
 
   revalidatePath("/manage/labels");

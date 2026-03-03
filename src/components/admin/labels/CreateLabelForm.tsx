@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { createLabel } from "@/app/manage/labels/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,18 @@ import { Label } from "@/components/ui/label";
 
 export function CreateLabelForm() {
   const [state, action, pending] = useActionState(createLabel, null);
+  const prevPending = useRef(false);
+
+  useEffect(() => {
+    if (prevPending.current && !pending) {
+      if (state?.error) {
+        toast.error(state.error);
+      } else {
+        toast.success("Label added!");
+      }
+    }
+    prevPending.current = pending;
+  }, [pending, state]);
 
   return (
     <form action={action} className="rounded-xl border border-border p-5 space-y-4">

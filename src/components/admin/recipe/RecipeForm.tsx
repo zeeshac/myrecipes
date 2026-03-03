@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { ImageIcon, Loader2, X, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -235,10 +236,25 @@ export function RecipeForm({ allLabels, recipe }: Props) {
     };
 
     startTransition(async () => {
-      const result = recipe
-        ? await updateRecipe(recipe.id, data)
-        : await createRecipe(data);
-      if (result?.error) setError(result.error);
+      try {
+        const result = recipe
+          ? await updateRecipe(recipe.id, data)
+          : await createRecipe(data);
+        if (result?.error) {
+          setError(result.error);
+          toast.error(result.error);
+        } else if (recipe) {
+          // updateRecipe returns { error: null } on success
+          toast.success("Recipe saved!");
+        }
+        // createRecipe redirects on success — no toast needed
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Something went wrong. Please try again.";
+        // NEXT_REDIRECT is thrown by redirect() — not a real error
+        if (msg.includes("NEXT_REDIRECT")) return;
+        setError(msg);
+        toast.error(msg);
+      }
     });
   }
 
@@ -247,8 +263,8 @@ export function RecipeForm({ allLabels, recipe }: Props) {
   return (
     <div className="space-y-8 max-w-2xl">
 
-      {/* ── Quick fill ── */}
-      {!blobParsed ? (
+      {/* ── Quick fill (new recipes only) ── */}
+      {!recipe && (!blobParsed ? (
         <div className="rounded-xl border border-border bg-accent/20 p-5 space-y-5">
           <div>
             <p className="text-sm font-semibold text-foreground">Paste your recipe</p>
@@ -307,7 +323,7 @@ export function RecipeForm({ allLabels, recipe }: Props) {
             Start over
           </button>
         </div>
-      )}
+      ))}
 
       {/* ── Title & description ── */}
       <div className="space-y-4">

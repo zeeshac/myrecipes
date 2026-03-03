@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Pencil, Trash2, Check, X, ChevronUp, ChevronDown, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,10 @@ import type { Label } from "@/db/schema";
 export function LabelList({ labels: initialLabels }: { labels: Label[] }) {
   const [items, setItems] = useState(initialLabels);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setItems(initialLabels);
+  }, [initialLabels]);
 
   function toggleNav(idx: number) {
     const next = items.map((item, i) =>

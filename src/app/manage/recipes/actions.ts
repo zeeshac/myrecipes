@@ -53,28 +53,35 @@ export async function createRecipe(data: RecipeFormData) {
 
   const slug = slugify(recipeFields.title, { lower: true, strict: true });
 
-  const [newRecipe] = await db
-    .insert(recipes)
-    .values({
-      ...recipeFields,
-      slug,
-      heroImageUrl: recipeFields.heroImageUrl || null,
-      heroImageAlt: recipeFields.heroImageAlt || null,
-      description: recipeFields.description || null,
-      servings: recipeFields.servings || null,
-      isPublished,
-      publishedAt: isPublished ? new Date() : null,
-    })
-    .returning();
+  let newRecipeId: string;
+  try {
+    const [newRecipe] = await db
+      .insert(recipes)
+      .values({
+        ...recipeFields,
+        slug,
+        heroImageUrl: recipeFields.heroImageUrl || null,
+        heroImageAlt: recipeFields.heroImageAlt || null,
+        description: recipeFields.description || null,
+        servings: recipeFields.servings || null,
+        isPublished,
+        publishedAt: isPublished ? new Date() : null,
+      })
+      .returning();
 
-  await writeSections(newRecipe.id, sections);
-  await writeLabels(newRecipe.id, labelIds);
+    await writeSections(newRecipe.id, sections);
+    await writeLabels(newRecipe.id, labelIds);
+    newRecipeId = newRecipe.id;
+  } catch (e) {
+    console.error("createRecipe error:", e);
+    return { error: "Failed to save recipe. Check your database connection." };
+  }
 
   revalidatePath("/");
   revalidatePath("/recipes");
   if (isPublished) revalidatePath(`/recipes/${slug}`);
 
-  redirect(`/manage/recipes/${newRecipe.id}`);
+  redirect(`/manage/recipes/${newRecipeId}`);
 }
 
 export async function updateRecipe(id: string, data: RecipeFormData) {
@@ -85,34 +92,39 @@ export async function updateRecipe(id: string, data: RecipeFormData) {
 
   const { sections, labelIds, isPublished, ...recipeFields } = parsed.data;
 
-  const existing = await db.query.recipes.findFirst({ where: eq(recipes.id, id) });
-  if (!existing) return { error: "Recipe not found." };
+  try {
+    const existing = await db.query.recipes.findFirst({ where: eq(recipes.id, id) });
+    if (!existing) return { error: "Recipe not found." };
 
-  const slug = slugify(recipeFields.title, { lower: true, strict: true });
+    const slug = slugify(recipeFields.title, { lower: true, strict: true });
 
-  await db.update(recipes).set({
-    ...recipeFields,
-    slug,
-    heroImageUrl: recipeFields.heroImageUrl || null,
-    heroImageAlt: recipeFields.heroImageAlt || null,
-    description: recipeFields.description || null,
-    servings: recipeFields.servings || null,
-    isPublished,
-    publishedAt: isPublished && !existing.publishedAt ? new Date() : existing.publishedAt,
-    updatedAt: new Date(),
-  }).where(eq(recipes.id, id));
+    await db.update(recipes).set({
+      ...recipeFields,
+      slug,
+      heroImageUrl: recipeFields.heroImageUrl || null,
+      heroImageAlt: recipeFields.heroImageAlt || null,
+      description: recipeFields.description || null,
+      servings: recipeFields.servings || null,
+      isPublished,
+      publishedAt: isPublished && !existing.publishedAt ? new Date() : existing.publishedAt,
+      updatedAt: new Date(),
+    }).where(eq(recipes.id, id));
 
-  // Replace sections (delete + re-insert is simplest for a personal site)
-  await db.delete(recipeSections).where(eq(recipeSections.recipeId, id));
-  await writeSections(id, sections);
+    // Replace sections (delete + re-insert is simplest for a personal site)
+    await db.delete(recipeSections).where(eq(recipeSections.recipeId, id));
+    await writeSections(id, sections);
 
-  await db.delete(recipeLabels).where(eq(recipeLabels.recipeId, id));
-  await writeLabels(id, labelIds);
+    await db.delete(recipeLabels).where(eq(recipeLabels.recipeId, id));
+    await writeLabels(id, labelIds);
 
-  revalidatePath("/");
-  revalidatePath("/recipes");
-  revalidatePath(`/recipes/${slug}`);
-  revalidatePath(`/manage/recipes/${id}`);
+    revalidatePath("/");
+    revalidatePath("/recipes");
+    revalidatePath(`/recipes/${slug}`);
+    revalidatePath(`/manage/recipes/${id}`);
+  } catch (e) {
+    console.error("updateRecipe error:", e);
+    return { error: "Failed to save recipe. Check your database connection." };
+  }
 
   return { error: null };
 }
