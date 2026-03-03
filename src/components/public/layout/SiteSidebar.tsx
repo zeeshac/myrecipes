@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { db } from "@/db";
 import { labels } from "@/db/schema";
-import { asc } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 
 export async function SiteSidebar() {
   const allLabels = await db
     .select()
     .from(labels)
+    .where(eq(labels.showInNav, true))
     .orderBy(asc(labels.sortOrder), asc(labels.name));
 
   return (

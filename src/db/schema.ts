@@ -23,6 +23,7 @@ export const labels = pgTable("labels", {
   slug: text("slug").notNull().unique(),
   color: text("color"), // optional hex color for badge UI
   sortOrder: integer("sort_order").notNull().default(0),
+  showInNav: boolean("show_in_nav").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

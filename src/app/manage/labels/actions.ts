@@ -52,6 +52,22 @@ export async function deleteLabel(id: string) {
   revalidatePath("/", "layout");
 }
 
+export async function toggleLabelNav(id: string, showInNav: boolean) {
+  await db.update(labels).set({ showInNav }).where(eq(labels.id, id));
+  revalidatePath("/manage/labels");
+  revalidatePath("/", "layout");
+}
+
+export async function reorderLabels(orderedIds: string[]) {
+  await Promise.all(
+    orderedIds.map((id, idx) =>
+      db.update(labels).set({ sortOrder: idx }).where(eq(labels.id, id))
+    )
+  );
+  revalidatePath("/manage/labels");
+  revalidatePath("/", "layout");
+}
+
 export async function updateLabel(id: string, formData: FormData) {
   const parsed = LabelSchema.safeParse({
     name: formData.get("name"),

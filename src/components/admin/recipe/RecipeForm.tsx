@@ -398,7 +398,9 @@ export function RecipeForm({ allLabels, recipe }: Props) {
       {/* ── Labels ── */}
       {allLabels.length > 0 && (
         <div className="space-y-3">
-          <Label>Labels</Label>
+          <Label>
+            Labels <span className="text-destructive">*</span>
+          </Label>
           <div className="flex flex-wrap gap-2">
             {allLabels.map((label) => {
               const selected = selectedLabelIds.includes(label.id);
@@ -423,6 +425,9 @@ export function RecipeForm({ allLabels, recipe }: Props) {
               );
             })}
           </div>
+          {selectedLabelIds.length === 0 && (
+            <p className="text-xs text-muted-foreground">Select at least one label.</p>
+          )}
         </div>
       )}
 
@@ -532,11 +537,11 @@ export function RecipeForm({ allLabels, recipe }: Props) {
 
       {/* ── Actions ── */}
       <div className="flex items-center gap-3 border-t border-border pt-6">
-        <Button onClick={() => handleSubmit(true)} disabled={isPending || !title.trim()}>
+        <Button onClick={() => handleSubmit(true)} disabled={isPending || !title.trim() || (allLabels.length > 0 && selectedLabelIds.length === 0)}>
           {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
           {recipe?.isPublished ? "Save changes" : "Publish"}
         </Button>
-        <Button variant="outline" onClick={() => handleSubmit(false)} disabled={isPending || !title.trim()}>
+        <Button variant="outline" onClick={() => handleSubmit(false)} disabled={isPending || !title.trim() || (allLabels.length > 0 && selectedLabelIds.length === 0)}>
           Save as draft
         </Button>
         <Button variant="ghost" onClick={() => router.push("/manage/recipes")}>
