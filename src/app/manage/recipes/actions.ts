@@ -153,6 +153,98 @@ export async function togglePublish(id: string, isPublished: boolean) {
   revalidatePath(`/manage/recipes/${id}`);
 }
 
+// ─── Nutrition ────────────────────────────────────────────────────────────────
+
+export async function calculateNutrition(
+  recipeId: string,
+  ingredientStrings: string[],
+  servingsCount: number
+) {
+  const appId = process.env.EDAMAM_APP_ID;
+  const appKey = process.env.EDAMAM_APP_KEY;
+
+  if (!appId || !appKey) {
+    return { error: "Edamam API keys not configured (EDAMAM_APP_ID / EDAMAM_APP_KEY)." };
+  }
+
+  const ingr = ingredientStrings.filter(Boolean);
+  if (ingr.length === 0) return { error: "Add some ingredients first." };
+
+  let data: Record<string, unknown>;
+  try {
+    const res = await fetch(
+      `https://api.edamam.com/api/nutrition-details?app_id=${appId}&app_key=${appKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: "Recipe", ingr, yield: servingsCount }),
+        signal: AbortSignal.timeout(15000),
+      }
+    );
+    if (!res.ok) {
+      const body = await res.text();
+      console.error("Edamam error:", res.status, body);
+      if (res.status === 555) {
+        return { error: "Edamam couldn't recognize the ingredients. Use common English names with quantities (e.g. '1 cup flour', '2 eggs', '500g chicken')." };
+      }
+      return { error: `Edamam returned ${res.status}. Check API keys or ingredient format.` };
+    }
+    data = await res.json();
+  } catch (e) {
+    console.error("calculateNutrition fetch error:", e);
+    return { error: "Failed to reach Edamam API. Try again." };
+  }
+
+  // Developer plan returns nutrients per-ingredient; sum them up
+  type NutrientMap = Record<string, { quantity: number }>;
+  type ParsedIngredient = { nutrients?: NutrientMap };
+  type IngredientEntry = { parsed?: ParsedIngredient[] };
+
+  const ingredientEntries = (data.ingredients ?? []) as IngredientEntry[];
+
+  // If top-level totalNutrients exists (paid plan), use it; otherwise sum per-ingredient
+  let totalCalories = 0;
+  let totalProtein = 0;
+  let totalCarbs = 0;
+  let totalFat = 0;
+
+  if (data.totalNutrients) {
+    const n = data.totalNutrients as NutrientMap;
+    totalCalories = n.ENERC_KCAL?.quantity ?? 0;
+    totalProtein  = n.PROCNT?.quantity ?? 0;
+    totalCarbs    = n.CHOCDF?.quantity ?? 0;
+    totalFat      = n.FAT?.quantity ?? 0;
+  } else {
+    for (const ing of ingredientEntries) {
+      for (const p of ing.parsed ?? []) {
+        const n = p.nutrients ?? {};
+        totalCalories += n.ENERC_KCAL?.quantity ?? 0;
+        totalProtein  += n.PROCNT?.quantity ?? 0;
+        totalCarbs    += n.CHOCDF?.quantity ?? 0;
+        totalFat      += n.FAT?.quantity ?? 0;
+      }
+    }
+  }
+
+  const count = Math.max(servingsCount, 1);
+  const nutrition = {
+    calories:  Math.round(totalCalories / count),
+    protein_g: Math.round((totalProtein / count) * 10) / 10,
+    carbs_g:   Math.round((totalCarbs   / count) * 10) / 10,
+    fat_g:     Math.round((totalFat     / count) * 10) / 10,
+  };
+
+  try {
+    await db.update(recipes).set({ nutrition, nutritionCalculatedAt: new Date() }).where(eq(recipes.id, recipeId));
+  } catch (e) {
+    console.error("calculateNutrition DB error:", e);
+    return { error: "Failed to save nutrition data." };
+  }
+
+  revalidatePath("/", "layout");
+  return { data: nutrition };
+}
+
 // ─── URL Import ───────────────────────────────────────────────────────────────
 
 export async function importRecipeFromUrl(url: string) {

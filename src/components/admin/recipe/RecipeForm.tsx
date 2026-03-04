@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { createRecipe, updateRecipe, importRecipeFromUrl } from "@/app/manage/recipes/actions";
+import { createRecipe, updateRecipe, importRecipeFromUrl, calculateNutrition } from "@/app/manage/recipes/actions";
 import { parseIngredientLine, parseStepsText } from "@/lib/parseIngredients";
 import type { Label as LabelType, RecipeWithRelations } from "@/db/schema";
 
@@ -129,6 +129,13 @@ export function RecipeForm({ allLabels, recipe }: Props) {
     return lines.length > 0 ? lines : [""];
   });
 
+  // Nutrition
+  const [nutrition, setNutrition] = useState<{ calories: number; protein_g: number; carbs_g: number; fat_g: number } | null>(
+    recipe?.nutrition ?? null
+  );
+  const [nutritionPending, setNutritionPending] = useState(false);
+  const [nutritionError, setNutritionError] = useState("");
+
   // Paste blob
   const [blobText, setBlobText] = useState("");
   const [blobParsed, setBlobParsed] = useState(false);
@@ -183,6 +190,25 @@ export function RecipeForm({ allLabels, recipe }: Props) {
     if (d.rawSteps.length > 0) setSteps(d.rawSteps.map(stripNumberedPrefix));
     setImportUrl("");
     setBlobParsed(true);
+  }
+
+  async function handleCalculateNutrition() {
+    if (!recipe) return;
+    setNutritionPending(true);
+    setNutritionError("");
+    const servingsCount = parseInt(servings.match(/\d+/)?.[0] ?? "1") || 1;
+    const ingr = ingredients
+      .filter((r) => r.name.trim())
+      .map((r) => [r.amount, r.name].filter(Boolean).join(" "));
+    const result = await calculateNutrition(recipe.id, ingr, servingsCount);
+    setNutritionPending(false);
+    if (result.error) {
+      setNutritionError(result.error);
+      toast.error(result.error);
+    } else if (result.data) {
+      setNutrition(result.data);
+      toast.success("Nutrition calculated!");
+    }
   }
 
   // Ingredient row helpers
@@ -547,6 +573,44 @@ export function RecipeForm({ allLabels, recipe }: Props) {
           Add step
         </Button>
       </div>
+
+      {/* ── Nutrition (edit mode only) ── */}
+      {recipe && (
+        <div className="space-y-3">
+          <div className="border-t border-border pt-6 flex items-center justify-between">
+            <div>
+              <h2 className="font-serif text-xl font-semibold text-foreground">Nutrition</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">Per serving · estimated via Edamam</p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleCalculateNutrition}
+              disabled={nutritionPending}
+            >
+              {nutritionPending && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
+              {nutrition ? "Recalculate" : "Calculate Nutrition"}
+            </Button>
+          </div>
+          {nutrition && (
+            <div className="flex gap-8 rounded-xl bg-accent/20 px-5 py-4">
+              {[
+                { label: "Calories", value: `${nutrition.calories}` },
+                { label: "Protein",  value: `${nutrition.protein_g}g` },
+                { label: "Carbs",    value: `${nutrition.carbs_g}g` },
+                { label: "Fat",      value: `${nutrition.fat_g}g` },
+              ].map(({ label, value }) => (
+                <div key={label} className="text-center">
+                  <p className="text-xl font-semibold text-foreground">{value}</p>
+                  <p className="text-xs text-muted-foreground">{label}</p>
+                </div>
+              ))}
+            </div>
+          )}
+          {nutritionError && <p className="text-xs text-destructive">{nutritionError}</p>}
+        </div>
+      )}
 
       {/* ── Error ── */}
       {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
