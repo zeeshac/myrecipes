@@ -120,96 +120,75 @@ export default async function RecipeDetailPage({
           </div>
         )}
 
-        {/* Title & labels */}
+        {/* Title, labels & meta */}
         <div className="space-y-3">
-          {recipe.recipeLabels.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {recipe.recipeLabels.map(({ label }) => (
-                <Link key={label.id} href={`/label/${label.slug}`}>
-                  <Badge
-                    variant="secondary"
-                    className="text-xs cursor-pointer hover:opacity-80 transition-opacity"
-                    style={
-                      label.color
-                        ? { backgroundColor: label.color + "22", color: label.color }
-                        : undefined
-                    }
-                  >
-                    {label.name}
-                  </Badge>
-                </Link>
-              ))}
-            </div>
-          )}
           <h1 className="font-serif text-4xl font-semibold leading-tight text-foreground">
             {recipe.title}
           </h1>
+
           {recipe.description && (
             <p className="text-lg text-muted-foreground leading-relaxed">
               {recipe.description}
             </p>
           )}
+
         </div>
 
-        {/* Meta bar */}
-        {(totalMin > 0 || recipe.servings || recipe.difficulty) && (
-        <div className="flex flex-wrap gap-6 rounded-xl bg-accent/40 px-6 py-4 text-sm">
-          {totalMin > 0 && (
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-primary" aria-hidden="true" />
-              <div>
-                <p className="font-medium text-foreground">{totalMin} min total</p>
-                {recipe.prepTimeMin && recipe.cookTimeMin && (
-                  <p className="text-xs text-muted-foreground">
-                    {recipe.prepTimeMin}m prep · {recipe.cookTimeMin}m cook
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-          {recipe.servings && (
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-primary" aria-hidden="true" />
-              <p className="font-medium text-foreground">{recipe.servings}</p>
-            </div>
-          )}
-          {recipe.difficulty && (
-            <div className="flex items-center gap-2">
-              <ChefHat className="h-4 w-4 text-primary" aria-hidden="true" />
-              <p className="font-medium text-foreground">
-                {difficultyLabel[recipe.difficulty]}
-              </p>
-            </div>
-          )}
-        </div>
-        )}
-
-        {/* Nutrition */}
-        {recipe.nutrition && (
-          <div className="space-y-2">
-            <h2 className="font-serif text-lg font-semibold text-foreground">
-              Nutrition per serving
-            </h2>
-            <div className="flex gap-6 text-sm">
-              {[
-                { label: "Calories", value: `${Math.round(recipe.nutrition.calories)}` },
-                { label: "Protein", value: `${recipe.nutrition.protein_g.toFixed(1)}g` },
-                { label: "Carbs", value: `${recipe.nutrition.carbs_g.toFixed(1)}g` },
-                { label: "Fat", value: `${recipe.nutrition.fat_g.toFixed(1)}g` },
-              ].map(({ label, value }) => (
-                <div key={label} className="text-center">
-                  <p className="text-xl font-semibold text-foreground">{value}</p>
-                  <p className="text-xs text-muted-foreground">{label}</p>
-                </div>
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground italic">
-              Nutrition is estimated and may vary.
-            </p>
-          </div>
-        )}
+        {/* Recipe body — separator + meta + content in one tightly-spaced wrapper */}
+        <div className="space-y-5">
 
         <Separator />
+
+        {/* Labels + meta — one line above ingredients */}
+        {(recipe.recipeLabels.length > 0 || totalMin > 0 || recipe.servings || recipe.difficulty) && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-muted-foreground">
+            {recipe.recipeLabels.map(({ label }) => (
+              <Link key={label.id} href={`/label/${label.slug}`}>
+                <Badge
+                  variant="secondary"
+                  className="text-xs cursor-pointer hover:opacity-80 transition-opacity"
+                  style={
+                    label.color
+                      ? { backgroundColor: label.color + "22", color: label.color }
+                      : undefined
+                  }
+                >
+                  {label.name}
+                </Badge>
+              </Link>
+            ))}
+            {recipe.recipeLabels.length > 0 && (totalMin > 0 || recipe.servings || recipe.difficulty) && (
+              <span className="text-border select-none">·</span>
+            )}
+            {totalMin > 0 && (
+              <span className="flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+                {totalMin} min
+                {recipe.prepTimeMin && recipe.cookTimeMin && (
+                  <span className="text-xs">({recipe.prepTimeMin}m prep · {recipe.cookTimeMin}m cook)</span>
+                )}
+              </span>
+            )}
+            {recipe.servings && (
+              <>
+                {totalMin > 0 && <span className="text-border select-none">·</span>}
+                <span className="flex items-center gap-1">
+                  <Users className="h-3.5 w-3.5" aria-hidden="true" />
+                  {recipe.servings}
+                </span>
+              </>
+            )}
+            {recipe.difficulty && (
+              <>
+                {(totalMin > 0 || recipe.servings) && <span className="text-border select-none">·</span>}
+                <span className="flex items-center gap-1">
+                  <ChefHat className="h-3.5 w-3.5" aria-hidden="true" />
+                  {difficultyLabel[recipe.difficulty]}
+                </span>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Ingredients & Steps */}
         {sortedSections.map((section, si) => {
@@ -294,6 +273,36 @@ export default async function RecipeDetailPage({
             </div>
           );
         })}
+
+        {/* Nutrition — secondary info, shown at the end */}
+        {recipe.nutrition && (
+          <>
+            <Separator />
+            <div className="space-y-2">
+              <h2 className="font-serif text-lg font-semibold text-foreground">
+                Nutrition per serving
+              </h2>
+              <div className="flex gap-6 text-sm">
+                {[
+                  { label: "Calories", value: `${Math.round(recipe.nutrition.calories)}` },
+                  { label: "Protein", value: `${recipe.nutrition.protein_g.toFixed(1)}g` },
+                  { label: "Carbs", value: `${recipe.nutrition.carbs_g.toFixed(1)}g` },
+                  { label: "Fat", value: `${recipe.nutrition.fat_g.toFixed(1)}g` },
+                ].map(({ label, value }) => (
+                  <div key={label} className="text-center">
+                    <p className="text-xl font-semibold text-foreground">{value}</p>
+                    <p className="text-xs text-muted-foreground">{label}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground italic">
+                Nutrition is estimated and may vary.
+              </p>
+            </div>
+          </>
+        )}
+
+        </div>{/* end recipe body */}
       </article>
     </>
   );
