@@ -77,9 +77,8 @@ export async function createRecipe(data: RecipeFormData) {
     return { error: "Failed to save recipe. Check your database connection." };
   }
 
-  revalidatePath("/");
-  revalidatePath("/recipes");
-  if (isPublished) revalidatePath(`/recipes/${slug}`);
+  revalidatePath("/", "layout");
+  revalidatePath("/manage/recipes");
 
   redirect(`/manage/recipes/${newRecipeId}`);
 }
@@ -117,9 +116,8 @@ export async function updateRecipe(id: string, data: RecipeFormData) {
     await db.delete(recipeLabels).where(eq(recipeLabels.recipeId, id));
     await writeLabels(id, labelIds);
 
-    revalidatePath("/");
-    revalidatePath("/recipes");
-    revalidatePath(`/recipes/${slug}`);
+    revalidatePath("/", "layout");
+    revalidatePath("/manage/recipes");
     revalidatePath(`/manage/recipes/${id}`);
   } catch (e) {
     console.error("updateRecipe error:", e);
