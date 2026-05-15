@@ -11,7 +11,7 @@ export async function SiteSidebar() {
     .orderBy(asc(labels.sortOrder), asc(labels.name));
 
   return (
-    <aside className="w-56 shrink-0">
+    <aside className="w-full shrink-0 lg:w-56">
       <nav aria-label="Recipe categories">
         <p className="mb-3 px-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           Browse

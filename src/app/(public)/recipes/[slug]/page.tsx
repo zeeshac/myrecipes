@@ -105,10 +105,10 @@ export default async function RecipeDetailPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <article className="max-w-2xl space-y-10">
+      <article className="max-w-2xl space-y-6 sm:space-y-8 lg:space-y-10">
         {/* Hero */}
         {recipe.heroImageUrl && (
-          <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl">
+          <div className="relative aspect-[16/9] w-full overflow-hidden rounded-lg sm:rounded-xl lg:rounded-2xl">
             <Image
               src={recipe.heroImageUrl}
               alt={recipe.heroImageAlt ?? recipe.title}
@@ -122,12 +122,12 @@ export default async function RecipeDetailPage({
 
         {/* Title, labels & meta */}
         <div className="space-y-3">
-          <h1 className="font-serif text-4xl font-semibold leading-tight text-foreground">
+          <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-semibold leading-tight text-foreground">
             {recipe.title}
           </h1>
 
           {recipe.description && (
-            <p className="text-lg text-muted-foreground leading-relaxed">
+            <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
               {recipe.description}
             </p>
           )}
@@ -135,13 +135,13 @@ export default async function RecipeDetailPage({
         </div>
 
         {/* Recipe body — separator + meta + content in one tightly-spaced wrapper */}
-        <div className="space-y-5">
+        <div className="space-y-4 sm:space-y-5">
 
         <Separator />
 
         {/* Labels + meta — one line above ingredients */}
         {(recipe.recipeLabels.length > 0 || totalMin > 0 || recipe.servings || recipe.difficulty) && (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-x-2 sm:gap-x-3 gap-y-1.5 text-xs sm:text-sm text-muted-foreground">
             {recipe.recipeLabels.map(({ label }) => (
               <Link key={label.id} href={`/label/${label.slug}`}>
                 <Badge
@@ -200,25 +200,25 @@ export default async function RecipeDetailPage({
           );
 
           return (
-            <div key={section.id} className="space-y-8">
+            <div key={section.id} className="space-y-6 sm:space-y-8">
               {section.title && (
-                <h2 className="font-serif text-2xl font-semibold text-foreground">
+                <h2 className="font-serif text-xl sm:text-2xl font-semibold text-foreground">
                   {section.title}
                 </h2>
               )}
 
               {/* Ingredients */}
               {sortedIngredients.length > 0 && (
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   {si === 0 && !section.title && (
-                    <h2 className="font-serif text-2xl font-semibold text-foreground">
+                    <h2 className="font-serif text-xl sm:text-2xl font-semibold text-foreground">
                       Ingredients
                     </h2>
                   )}
                   <ul className="space-y-2">
                     {sortedIngredients.map((ing) => (
-                      <li key={ing.id} className="flex gap-3 text-sm">
-                        <span className="font-medium text-foreground min-w-[5rem] shrink-0">
+                      <li key={ing.id} className="flex gap-2 sm:gap-3 text-xs sm:text-sm">
+                        <span className="font-medium text-foreground min-w-[4rem] sm:min-w-[5rem] shrink-0 break-words">
                           {[ing.qty, ing.unit].filter(Boolean).join(" ")}
                         </span>
                         <span className="text-foreground/80">
@@ -235,20 +235,20 @@ export default async function RecipeDetailPage({
 
               {/* Steps */}
               {sortedSteps.length > 0 && (
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   {si === 0 && !section.title && (
-                    <h2 className="font-serif text-2xl font-semibold text-foreground">
+                    <h2 className="font-serif text-xl sm:text-2xl font-semibold text-foreground">
                       Instructions
                     </h2>
                   )}
-                  <ol className="space-y-5">
+                  <ol className="space-y-4 sm:space-y-5">
                     {sortedSteps.map((step, idx) => (
-                      <li key={step.id} className="flex gap-4">
-                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                      <li key={step.id} className="flex gap-3 sm:gap-4">
+                        <span className="flex h-6 w-6 sm:h-7 sm:w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                           {idx + 1}
                         </span>
                         <div className="space-y-2 pt-0.5">
-                          <p className="text-sm leading-relaxed text-foreground/90">
+                          <p className="text-xs sm:text-sm leading-relaxed text-foreground/90">
                             {step.content}
                           </p>
                           {step.imageUrl && (
@@ -279,10 +279,10 @@ export default async function RecipeDetailPage({
           <>
             <Separator />
             <div className="space-y-2">
-              <h2 className="font-serif text-lg font-semibold text-foreground">
+              <h2 className="font-serif text-base sm:text-lg font-semibold text-foreground">
                 Nutrition per serving
               </h2>
-              <div className="flex gap-6 text-sm">
+              <div className="grid grid-cols-2 sm:flex gap-3 sm:gap-6 text-xs sm:text-sm">
                 {[
                   { label: "Calories", value: `${Math.round(recipe.nutrition.calories)}` },
                   { label: "Protein", value: `${recipe.nutrition.protein_g.toFixed(1)}g` },
@@ -290,7 +290,7 @@ export default async function RecipeDetailPage({
                   { label: "Fat", value: `${recipe.nutrition.fat_g.toFixed(1)}g` },
                 ].map(({ label, value }) => (
                   <div key={label} className="text-center">
-                    <p className="text-xl font-semibold text-foreground">{value}</p>
+                    <p className="text-lg sm:text-xl font-semibold text-foreground">{value}</p>
                     <p className="text-xs text-muted-foreground">{label}</p>
                   </div>
                 ))}
